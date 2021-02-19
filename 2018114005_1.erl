@@ -32,9 +32,11 @@ send_token(Rank, P, Token, Init, Fd) ->
 
 main(Args) ->
     [Input, Output] = Args,
+
 	{ok, Fd} = file:open(Input, [read]),
 	{ok, [P, M]} = io:fread(Fd, [], "~d~d"),
 	file:close(Fd),
+
 	{ok, Fd2} = file:open(Output, [write]),
     spawn(?MODULE, send_token, [0, P, M, self(), Fd2]),
     receive_token(Fd2),

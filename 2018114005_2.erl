@@ -1,6 +1,6 @@
 -module('2018114005_2').
 
--compile(export_all).
+-export([main/1, bellman_ford/5, init/2, v_loop/4, merge_distances/2, len/3, start/3, distributed_bellman_ford/3, e_loop/2, relax/4]).
 
 relax(S, T, W, Distance) ->
 	DS = lists:nth(S, Distance),
@@ -86,34 +86,17 @@ bellman_ford(Adj, Src, N, M, P) ->
 	ShortestDistance = v_loop(lists:sublist(Adj, start(0, M, P), len(0, M, P)), Distance, Pids, P),
 	ShortestDistance.
 
-main() ->
-	% N = 4,
-	% M = 5,
+main(Args) ->
+	[Input, Output] = Args,
 
-	% Adj = [{1, 2, 1},
-	% 	   {1, 3, 1},
-	% 	   {1, 4, 3},
-	% 	   {2, 4, 1},
-	% 	   {3, 4, 1}],
-
-	% Src = 1,
-	% P = 3,
-
-	N = 5,
-	M = 9,
-
-	Adj = [{1, 2, 10},
-		   {1, 3, 5},
-		   {2, 5, 1},
-		   {2, 3, 2},
-		   {3, 2, 3},
-		   {3, 4, 2},
-		   {4, 5, 6},
-		   {4, 1, 7},
-		   {5, 4, 4}],
-
-	Src = 1,
-	P = 5,
+	{ok, Fd} = file:open(Input, [read]),
+	{ok, [P]} = io:fread(Fd, [], "~d"),
+	{ok, [N, M]} = io:fread(Fd, [], "~d ~d"),
+	Adj = [{U, V, W} || {ok, [U, V, W]} <- [io:fread(Fd, [], "~d ~d ~d") || _ <- lists:seq(1, M)]],
+	{ok, [Src]} = io:fread(Fd, [], "~d"),
+	file:close(Fd),
 
 	ShortestDistance = bellman_ford(Adj, Src, N, M, P),
-	lists:foreach(fun(I) -> io:fwrite("~p ~p\n", [I, lists:nth(I, ShortestDistance)]) end, lists:seq(1, N)).
+	{ok, Fd2} = file:open(Output, [write]),
+	lists:foreach(fun(I) -> io:format(Fd2, "~p ~p\n", [I, lists:nth(I, ShortestDistance)]) end, lists:seq(1, N)),
+	file:close(Fd2).
