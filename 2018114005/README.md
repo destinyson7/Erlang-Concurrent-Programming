@@ -10,6 +10,8 @@ erlc <file>.erl
 erl -noshell -s <file> main <input file> <output file> -s init stop
 ```
 
+---
+
 ### Problem 1
 
 -  **Description**:
