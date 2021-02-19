@@ -1,31 +1,41 @@
 -module('2018114005_1').
 
--export([main/1,
-         receive_token/0,
-         send_token/4,
-         write/3]).
+-export([main/1, receive_token/1, send_token/5, write/4]).
 
-write(To, From, Token) ->
-    io:format("Process ~p received token ~p from process "
-              "~p.~n",
-              [To, Token, From]).
+write(To, From, Token, Fd) ->
+    io:format(Fd, "Process ~p received token ~p from process ~p.~n", [To, Token, From]).
 
-receive_token() ->
-    receive {From, To, Token} -> write(To, From, Token) end.
+receive_token(Fd) ->
+    receive
+        {From, To, Token} ->
+            write(To, From, Token, Fd)
+    end.
 
-send_token(Cur, P, Token, Init) ->
-    if Cur > 0 -> receive_token();
-       Cur == 0 -> ok
+send_token(Rank, P, Token, Init, Fd) ->
+    if
+        Rank > 0 ->
+            receive_token(Fd);
+
+        Rank == 0 ->
+            ok
     end,
-    if Cur < P - 1 ->
-           Pid = spawn(?MODULE,
-                       send_token,
-                       [Cur + 1, P, Token, Init]);
-       Cur == P - 1 -> Pid = Init
+
+    if
+        Rank < P - 1 ->
+            Pid = spawn(?MODULE, send_token, [Rank + 1, P, Token, Init, Fd]);
+
+        Rank == P - 1 ->
+            Pid = Init
     end,
-    Pid ! {Cur, (Cur + 1) rem P, Token}.
+
+    Pid ! {Rank, (Rank + 1) rem P, Token}.
 
 main(Args) ->
-    [P, M] = Args,
-    spawn(?MODULE, send_token, [0, P, M, self()]),
-    receive_token().
+    [Input, Output] = Args,
+	{ok, Fd} = file:open(Input, [read]),
+	{ok, [P, M]} = io:fread(Fd, [], "~d~d"),
+	file:close(Fd),
+	{ok, Fd2} = file:open(Output, [write]),
+    spawn(?MODULE, send_token, [0, P, M, self(), Fd2]),
+    receive_token(Fd2),
+	file:close(Fd2).
